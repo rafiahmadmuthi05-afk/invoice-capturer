@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Invoice Data Capturer</title>
+<style>
+  :root {
+    --win-face: #ECE9D8;
+    --win-face-dark: #D4D0C8;
+    --win-border: #919B9C;
+    --win-border-dark: #716F64;
+    --win-blue-title: #0A246A;
+    --win-blue-title-light: #A6CAF0;
+    --field-bg: #FFFFFF;
+    --text: #000000;
+    --accent-btn: #ECE9D8;
+    --header-bg: #D4D0C8;
+    --row-alt: #F5F4EE;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #3A6EA5;
+    font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
+    font-size: 12px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .window {
+    width: 1010px;
+    max-width: 100%;
+    background: var(--win-face);
+    border: 1px solid var(--win-border-dark);
+    box-shadow: 3px 3px 12px rgba(0,0,0,0.4);
+  }
+
+  .titlebar {
+    background: linear-gradient(180deg, #1F5FA8 0%, #0A246A 100%);
+    color: white;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .titlebar .title-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .titlebar .icon {
+    width: 14px;
+    height: 14px;
+    background: #FFD75E;
+    display: inline-block;
+    border-radius: 2px;
+  }
+  .titlebar .win-controls {
+    display: flex;
+    gap: 2px;
+  }
+  .titlebar .win-controls div {
+    width: 20px;
+    height: 16px;
+    background: var(--win-face);
+    color: #000;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    border: 1px solid var(--win-border-dark);
+    cursor: default;
+  }
+
+  .content {
+    padding: 14px 16px 10px 16px;
+  }
+
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .app-header h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: bold;
+    color: #000;
+  }
+  .app-header .sub {
+    font-size: 11px;
+    color: #4B4B4B;
+    font-style: italic;
+  }
+
+  fieldset {
+    border: 1px solid var(--win-border);
+    border-radius: 2px;
+    padding: 12px 14px 14px 14px;
+    margin: 0 0 12px 0;
+    background: var(--win-face);
+  }
+  legend {
+    font-weight: bold;
+    padding: 0 4px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 130px 1fr 40px 130px 1fr;
+    row-gap: 8px;
+    column-gap: 6px;
+    align-items: center;
+  }
+  .form-grid label {
+    text-align: left;
+    white-space: nowrap;
+  }
+  .form-grid input, .form-grid select {
+    font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
+    font-size: 12px;
+    padding: 3px 4px;
+    border: 1px solid var(--win-border-dark);
+    background: var(--field-bg);
+    width: 100%;
+  }
+  .form-grid input:focus, .form-grid select:focus {
+    outline: 1px dotted #000;
+    outline-offset: 1px;
+  }
+  .full-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    column-gap: 6px;
+    align-items: center;
+  }
+
+  .btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 10px 0 14px 0;
+  }
+  button {
+    font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
+    font-size: 12px;
+    padding: 5px 16px;
+    background: var(--accent-btn);
+    border: 1px solid var(--win-border-dark);
+    border-radius: 2px;
+    cursor: pointer;
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.6);
+  }
+  button:hover { background: #F5F3E8; }
+  button:active { box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3); }
+  button#btnAdd {
+    font-weight: bold;
+  }
+
+  .table-section h2 {
+    font-size: 13px;
+    margin: 0 0 6px 0;
+  }
+  .table-wrap {
+    border: 1px solid var(--win-border-dark);
+    background: var(--field-bg);
+    height: 230px;
+    overflow: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 11.5px;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--header-bg);
+    border: 1px solid var(--win-border-dark);
+    padding: 5px 8px;
+    text-align: left;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  tbody td {
+    border: 1px solid #DAD7CC;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:hover { background: var(--win-blue-title-light); }
+
+  .empty-row td {
+    text-align: center;
+    color: #7A7A6E;
+    font-style: italic;
+    padding: 20px;
+  }
+
+  .statusbar {
+    margin-top: 8px;
+    padding: 4px 8px;
+    border-top: 1px solid var(--win-border);
+    font-size: 11px;
+    color: #4B4B4B;
+    text-align: center;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #2E7D32;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 3px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { background: #B23A2E; }
+
+  .required-mark { color: #B23A2E; }
+</style>
+</head>
+<body>
+
+<div class="window">
+  <div class="titlebar">
+    <div class="title-left">
+      <span class="icon"></span>
+      <span>Invoice Data Capturer</span>
+    </div>
+    <div class="win-controls">
+      <div>_</div>
+      <div>□</div>
+      <div>×</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="app-header">
+      <h1>Invoice Onboarding Data Capturer</h1>
+      <span class="sub">Latihan RPA &middot; data tidak disimpan permanen</span>
+    </div>
+
+    <fieldset>
+      <legend>Detail Invoice</legend>
+      <div class="form-grid">
+        <label for="namaFile">Nama File</label>
+        <input type="text" id="namaFile" placeholder="invoice_01.pdf">
+
+        <div></div>
+
+        <label for="noInvoice">No. Invoice</label>
+        <input type="text" id="noInvoice" placeholder="INV-202609-2001">
+
+        <label for="tanggal">Tanggal</label>
+        <input type="date" id="tanggal">
+
+        <div></div>
+
+        <label for="jatuhTempo">Jatuh Tempo</label>
+        <input type="date" id="jatuhTempo">
+
+        <div class="full-row">
+          <label for="namaPelanggan">Nama Pelanggan</label>
+          <input type="text" id="namaPelanggan" placeholder="CV Berkah Mandiri">
+        </div>
+
+        <div></div><div></div><div></div>
+
+        <label for="total">Total (Rp)</label>
+        <input type="number" id="total" placeholder="0" min="0" step="1">
+      </div>
+
+      <div class="btn-row">
+        <button id="btnClear" type="button">Clear Form</button>
+        <button id="btnAdd" type="button">Add Invoice</button>
+        <button id="btnRefresh" type="button">Refresh Table</button>
+        <button id="btnExit" type="button">Exit</button>
+      </div>
+    </fieldset>
+
+    <div class="table-section">
+      <h2>Captured Invoices</h2>
+      <div class="table-wrap">
+        <table id="invoiceTable">
+          <thead>
+            <tr>
+              <th>Nama File</th>
+              <th>No. Invoice</th>
+              <th>Tanggal</th>
+              <th>Jatuh Tempo</th>
+              <th>Nama Pelanggan</th>
+              <th>Total (Rp)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="6">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="statusbar" id="statusBar">Siap. 0 invoice tercatat.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let invoices = [];
+
+  const fields = {
+    namaFile: document.getElementById('namaFile'),
+    noInvoice: document.getElementById('noInvoice'),
+    tanggal: document.getElementById('tanggal'),
+    jatuhTempo: document.getElementById('jatuhTempo'),
+    namaPelanggan: document.getElementById('namaPelanggan'),
+    total: document.getElementById('total'),
+  };
+
+  const tableBody = document.getElementById('tableBody');
+  const statusBar = document.getElementById('statusBar');
+  const toast = document.getElementById('toast');
+
+  function showToast(message, isError) {
+    toast.textContent = message;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { toast.className = 'toast'; }, 2200);
+  }
+
+  function formatRupiah(num) {
+    if (num === '' || num === null || isNaN(num)) return '';
+    return Number(num).toLocaleString('id-ID');
+  }
+
+  function formatDateDisplay(isoDate) {
+    if (!isoDate) return '';
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function renderTable() {
+    tableBody.innerHTML = '';
+    if (invoices.length === 0) {
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>';
+    } else {
+      invoices.forEach(inv => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${inv.namaFile}</td>
+          <td>${inv.noInvoice}</td>
+          <td>${formatDateDisplay(inv.tanggal)}</td>
+          <td>${formatDateDisplay(inv.jatuhTempo)}</td>
+          <td>${inv.namaPelanggan}</td>
+          <td style="text-align:right">${formatRupiah(inv.total)}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+    statusBar.textContent = `Siap. ${invoices.length} invoice tercatat.`;
+  }
+
+  function clearForm() {
+    Object.values(fields).forEach(f => f.value = '');
+    fields.namaFile.focus();
+  }
+
+  document.getElementById('btnAdd').addEventListener('click', () => {
+    const namaFile = fields.namaFile.value.trim();
+    const noInvoice = fields.noInvoice.value.trim();
+    const tanggal = fields.tanggal.value;
+    const jatuhTempo = fields.jatuhTempo.value;
+    const namaPelanggan = fields.namaPelanggan.value.trim();
+    const total = fields.total.value;
+
+    if (!namaFile || !noInvoice || !namaPelanggan || total === '') {
+      showToast('Lengkapi Nama File, No. Invoice, Nama Pelanggan, dan Total.', true);
+      return;
+    }
+
+    invoices.push({ namaFile, noInvoice, tanggal, jatuhTempo, namaPelanggan, total });
+    renderTable();
+    showToast('Invoice ditambahkan.');
+    clearForm();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', clearForm);
+
+  document.getElementById('btnRefresh').addEventListener('click', () => {
+    renderTable();
+    showToast('Tabel di-refresh.');
+  });
+
+  document.getElementById('btnExit').addEventListener('click', () => {
+    showToast('Ini aplikasi latihan — tutup tab browser untuk keluar.', true);
+  });
+
+  renderTable();
+</script>
+
+</body>
+</html>
