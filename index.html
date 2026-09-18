@@ -237,6 +237,56 @@
   .toast.error { background: #B23A2E; }
 
   .required-mark { color: #B23A2E; }
+
+  .btn-delete {
+    padding: 2px 10px;
+    font-size: 11px;
+    background: #ECE9D8;
+    border: 1px solid var(--win-border-dark);
+    border-radius: 2px;
+    cursor: pointer;
+    color: #B23A2E;
+  }
+  .btn-delete:hover { background: #F5D5D0; }
+
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .confirm-overlay.show {
+    display: flex;
+  }
+  .confirm-box {
+    background: var(--win-face);
+    border: 1px solid var(--win-border-dark);
+    box-shadow: 3px 3px 12px rgba(0,0,0,0.4);
+    padding: 18px 20px;
+    width: 320px;
+    max-width: 90%;
+  }
+  .confirm-box p {
+    margin: 0 0 16px 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .confirm-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .confirm-danger {
+    background: #C0392B;
+    color: white;
+    border-color: #8E2C22;
+  }
+  .confirm-danger:hover {
+    background: #D9483A;
+  }
 </style>
 </head>
 <body>
@@ -293,7 +343,7 @@
       <div class="btn-row">
         <button id="btnClear" type="button">Clear Form</button>
         <button id="btnAdd" type="button">Add Invoice</button>
-        <button id="btnRefresh" type="button">Refresh Table</button>
+        <button id="btnRefresh" type="button">Hapus Semua</button>
         <button id="btnExit" type="button">Exit</button>
       </div>
     </fieldset>
@@ -310,16 +360,27 @@
               <th>Jatuh Tempo</th>
               <th>Nama Pelanggan</th>
               <th>Total (Rp)</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr class="empty-row"><td colspan="6">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>
+            <tr class="empty-row"><td colspan="7">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
     <div class="statusbar" id="statusBar">Siap. 0 invoice tercatat.</div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p id="confirmMessage">Hapus semua data?</p>
+    <div class="confirm-btn-row">
+      <button id="confirmCancel" type="button">Batal</button>
+      <button id="confirmOk" type="button" class="confirm-danger">Hapus</button>
+    </div>
   </div>
 </div>
 
@@ -362,9 +423,9 @@
   function renderTable() {
     tableBody.innerHTML = '';
     if (invoices.length === 0) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="7">Belum ada data. Isi form di atas lalu klik "Add Invoice".</td></tr>';
     } else {
-      invoices.forEach(inv => {
+      invoices.forEach((inv, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${inv.namaFile}</td>
@@ -373,11 +434,49 @@
           <td>${formatDateDisplay(inv.jatuhTempo)}</td>
           <td>${inv.namaPelanggan}</td>
           <td style="text-align:right">${formatRupiah(inv.total)}</td>
+          <td style="text-align:center"><button type="button" class="btn-delete" data-idx="${idx}">Hapus</button></td>
         `;
         tableBody.appendChild(tr);
       });
+      tableBody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = parseInt(btn.getAttribute('data-idx'), 10);
+          deleteInvoice(i);
+        });
+      });
     }
     statusBar.textContent = `Siap. ${invoices.length} invoice tercatat.`;
+  }
+
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  const confirmMessage = document.getElementById('confirmMessage');
+  const confirmOk = document.getElementById('confirmOk');
+  const confirmCancel = document.getElementById('confirmCancel');
+  let pendingConfirmAction = null;
+
+  function showConfirm(message, onConfirm) {
+    confirmMessage.textContent = message;
+    pendingConfirmAction = onConfirm;
+    confirmOverlay.classList.add('show');
+  }
+
+  confirmOk.addEventListener('click', () => {
+    confirmOverlay.classList.remove('show');
+    if (pendingConfirmAction) pendingConfirmAction();
+    pendingConfirmAction = null;
+  });
+
+  confirmCancel.addEventListener('click', () => {
+    confirmOverlay.classList.remove('show');
+    pendingConfirmAction = null;
+  });
+
+  function deleteInvoice(index) {
+    showConfirm('Hapus data invoice ini?', () => {
+      invoices.splice(index, 1);
+      renderTable();
+      showToast('Invoice dihapus.');
+    });
   }
 
   function clearForm() {
@@ -407,8 +506,15 @@
   document.getElementById('btnClear').addEventListener('click', clearForm);
 
   document.getElementById('btnRefresh').addEventListener('click', () => {
-    renderTable();
-    showToast('Tabel di-refresh.');
+    if (invoices.length === 0) {
+      showToast('Tabel sudah kosong.');
+      return;
+    }
+    showConfirm(`Hapus semua ${invoices.length} data invoice di tabel? Tindakan ini tidak bisa dibatalkan.`, () => {
+      invoices = [];
+      renderTable();
+      showToast('Semua data invoice dihapus.');
+    });
   });
 
   document.getElementById('btnExit').addEventListener('click', () => {
